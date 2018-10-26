@@ -1,3 +1,8 @@
+ /**
+ * TODO: 
+ * 1) modify postLogin to ask user if associated with more than 1 org
+ * 2) 
+ */
 const { promisify } = require('util');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -5,7 +10,12 @@ const passport = require('passport');
 const User = require('../models/User');
 
 const randomBytesAsync = promisify(crypto.randomBytes);
-
+/**
+ * S
+ * I
+ * T
+ * E
+ */
 /**
  * GET /login
  * Login page.
@@ -31,6 +41,7 @@ exports.postLogin = (req, res, next) => {
   const errors = req.validationErrors();
 
   if (errors) {
+    // for Flash can have 'errors' info' or 'success'
     req.flash('errors', errors);
     return res.redirect('/login');
   }
@@ -111,109 +122,6 @@ exports.postSignup = (req, res, next) => {
         }
         res.redirect('/');
       });
-    });
-  });
-};
-
-/**
- * GET /account
- * Profile page.
- */
-exports.getAccount = (req, res) => {
-  res.render('account/profile', {
-    title: 'Account Management'
-  });
-};
-
-/**
- * POST /account/profile
- * Update profile information.
- */
-exports.postUpdateProfile = (req, res, next) => {
-  req.assert('email', 'Please enter a valid email address.').isEmail();
-  req.sanitize('email').normalizeEmail({ gmail_remove_dots: false });
-
-  const errors = req.validationErrors();
-
-  if (errors) {
-    req.flash('errors', errors);
-    return res.redirect('/account');
-  }
-
-  User.findById(req.user.id, (err, user) => {
-    if (err) { return next(err); }
-    user.email = req.body.email || '';
-    user.profile.name = req.body.name || '';
-    user.profile.gender = req.body.gender || '';
-    user.profile.location = req.body.location || '';
-    user.profile.website = req.body.website || '';
-    user.save((err) => {
-      if (err) {
-        if (err.code === 11000) {
-          req.flash('errors', { msg: 'The email address you have entered is already associated with an account.' });
-          return res.redirect('/account');
-        }
-        return next(err);
-      }
-      req.flash('success', { msg: 'Profile information has been updated.' });
-      res.redirect('/account');
-    });
-  });
-};
-
-/**
- * POST /account/password
- * Update current password.
- */
-exports.postUpdatePassword = (req, res, next) => {
-  req.assert('password', 'Password must be at least 4 characters long').len(4);
-  req.assert('confirmPassword', 'Passwords do not match').equals(req.body.password);
-
-  const errors = req.validationErrors();
-
-  if (errors) {
-    req.flash('errors', errors);
-    return res.redirect('/account');
-  }
-
-  User.findById(req.user.id, (err, user) => {
-    if (err) { return next(err); }
-    user.password = req.body.password;
-    user.save((err) => {
-      if (err) { return next(err); }
-      req.flash('success', { msg: 'Password has been changed.' });
-      res.redirect('/account');
-    });
-  });
-};
-
-/**
- * POST /account/delete
- * Delete user account.
- */
-exports.postDeleteAccount = (req, res, next) => {
-  User.deleteOne({ _id: req.user.id }, (err) => {
-    if (err) { return next(err); }
-    req.logout();
-    req.flash('info', { msg: 'Your account has been deleted.' });
-    res.redirect('/');
-  });
-};
-
-/**
- * GET /account/unlink/:provider
- * Unlink OAuth provider.
- */
-exports.getOauthUnlink = (req, res, next) => {
-  const { provider } = req.params;
-  User.findById(req.user.id, (err, user) => {
-    if (err) { return next(err); }
-    user[provider] = undefined;
-    user.tokens = user.tokens.filter(token => token.kind !== provider);
-    user.save((err) => {
-      if (err) { return next(err); }
-      req.flash('info', { msg: `${provider} account has been unlinked.` });
-      res.redirect('/account');
     });
   });
 };
@@ -382,7 +290,7 @@ exports.postForgot = (req, res, next) => {
     });
     const mailOptions = {
       to: user.email,
-      from: 'hackathon@starter.com',
+      from: 'rrankin8801@gmail.com',
       subject: 'Reset your password on Hackathon Starter',
       text: `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\n
         Please click on the following link, or paste this into your browser to complete the process:\n\n
@@ -422,4 +330,117 @@ exports.postForgot = (req, res, next) => {
     .then(sendForgotPasswordEmail)
     .then(() => res.redirect('/forgot'))
     .catch(next);
+};
+
+/**
+ * D
+ * A
+ * S
+ * H
+ * B
+ * O
+ * A
+ * R
+ * D
+ */
+
+/**
+ * GET /Dashboard/account
+ * Profile page.
+ */
+exports.getAccount = (req, res) => {
+  res.render('account/profile', {
+    title: 'Account Management'
+  });
+};
+
+/**
+ * POST /Dashboard/account/profile
+ * Update profile information.
+ */
+exports.postUpdateProfile = (req, res, next) => {
+  req.assert('email', 'Please enter a valid email address.').isEmail();
+  req.sanitize('email').normalizeEmail({ gmail_remove_dots: false });
+
+  const errors = req.validationErrors();
+
+  if (errors) {
+    req.flash('errors', errors);
+    return res.redirect('/Dashboard/account');
+  }
+
+  User.findById(req.user.id, (err, user) => {
+    if (err) { return next(err); }
+    user.email = req.body.email || '';
+    user.profile.firstName = req.body.name || '';
+    user.profile.location = req.body.location || '';
+    user.save((err) => {
+      if (err) {
+        if (err.code === 11000) {
+          req.flash('errors', { msg: 'The email address you have entered is already associated with an account.' });
+          return res.redirect('/Dashboard/account');
+        }
+        return next(err);
+      }
+      req.flash('success', { msg: 'Profile information has been updated.' });
+      res.redirect('/Dashboard/account');
+    });
+  });
+};
+
+/**
+ * POST /Dashboard/account/password
+ * Update current password.
+ */
+exports.postUpdatePassword = (req, res, next) => {
+  req.assert('password', 'Password must be at least 4 characters long').len(4);
+  req.assert('confirmPassword', 'Passwords do not match').equals(req.body.password);
+
+  const errors = req.validationErrors();
+
+  if (errors) {
+    req.flash('errors', errors);
+    return res.redirect('/Dashboard/account');
+  }
+
+  User.findById(req.user.id, (err, user) => {
+    if (err) { return next(err); }
+    user.password = req.body.password;
+    user.save((err) => {
+      if (err) { return next(err); }
+      req.flash('success', { msg: 'Password has been changed.' });
+      res.redirect('/Dashboard/account');
+    });
+  });
+};
+
+/**
+ * POST /Dashboard/account/delete
+ * Delete user account.
+ */
+exports.postDeleteAccount = (req, res, next) => {
+  User.deleteOne({ _id: req.user.id }, (err) => {
+    if (err) { return next(err); }
+    req.logout();
+    req.flash('info', { msg: 'Your account has been deleted.' });
+    res.redirect('/');
+  });
+};
+
+/**
+ * GET /Dashboard/account/unlink/:provider
+ * Unlink OAuth provider.
+ */
+exports.getOauthUnlink = (req, res, next) => {
+  const { provider } = req.params;
+  User.findById(req.user.id, (err, user) => {
+    if (err) { return next(err); }
+    user[provider] = undefined;
+    user.tokens = user.tokens.filter(token => token.kind !== provider);
+    user.save((err) => {
+      if (err) { return next(err); }
+      req.flash('info', { msg: `${provider} account has been unlinked.` });
+      res.redirect('/Dashboard/account');
+    });
+  });
 };

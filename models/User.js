@@ -1,3 +1,13 @@
+/**
+ * TODO:
+ * 1) did not use uniqueValidator from previous
+ * 2) changed structure: before => now
+ *      user.created_at => user.createdOn
+ *      user.firstName => user.profile.firstName
+ *      user.lastName => user.profile.lastName
+ *      user.role => user.profile.role
+ */
+
 const bcrypt = require('bcrypt-nodejs');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
@@ -8,21 +18,13 @@ const userSchema = new mongoose.Schema({
   passwordResetToken: String,
   passwordResetExpires: Date,
 
-  facebook: String,
-  twitter: String,
-  google: String,
-  github: String,
-  instagram: String,
-  linkedin: String,
-  steam: String,
-  tokens: Array,
-
   profile: {
-    name: String,
+    firstName: String,
+    lastName: String,
     gender: String,
     location: String,
-    website: String,
-    picture: String
+    picture: String,
+    role: { type: String, enum: ["view", "user", "admin"], required: true, default: "view" }
   }
 }, { timestamps: true });
 
@@ -43,12 +45,17 @@ userSchema.pre('save', function save(next) {
 });
 
 /**
+ * Helper method for generating user's fullname.
+ */
+userSchema.methods.fullName = function () {
+  return this.firstName + " " + this.lastName;
+};
+
+/**
  * Helper method for validating user's password.
  */
-userSchema.methods.comparePassword = function comparePassword(candidatePassword, cb) {
-  bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
-    cb(err, isMatch);
-  });
+userSchema.methods.validPassword = function (password) {
+  return bcrypt.compareSync(password, this.password);
 };
 
 /**

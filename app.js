@@ -1,4 +1,11 @@
 /**
+ * TODO:
+ * 1) Clean up error handling on middleware
+ * 2) Standardize result outputs on each route
+ * 3) add device routes
+ */
+
+/**
  * Module dependencies.
  */
 const express = require('express');
@@ -31,9 +38,17 @@ dotenv.load({ path: '.env.example' });
  * Controllers (route handlers).
  */
 const homeController = require('./controllers/home');
+const dashbaordController = require('./controllers/dashboard');
+
 const userController = require('./controllers/user');
+const orgController = require('./controllers/organization');
+const athleteController = require('./controllers/athlete');
+const deviceController = require('./controllers/device');
+const notificationController = require('./controllers/notification');
+const weightController = require('./controllers/weight');
+
 const apiController = require('./controllers/api');
-const contactController = require('./controllers/contact');
+
 
 /**
  * API keys and Passport configuration.
@@ -76,8 +91,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressValidator());
 app.use(session({
-  resave: true,
-  saveUninitialized: true,
+  resave: true, //  force session save every time 
+  saveUninitialized: true,  // Forces a session that is "uninitialized" to be saved to the store
   secret: process.env.SESSION_SECRET,
   cookie: { maxAge: 1209600000 }, // two weeks in milliseconds
   store: new MongoStore({
@@ -92,7 +107,7 @@ app.use((req, res, next) => {
   if (req.path === '/api/upload') {
     next();
   } else {
-    lusca.csrf()(req, res, next);
+    lusca.csrf({ cookie: "cookieName" })(req, res, next);
   }
 });
 app.use(lusca.xframe('SAMEORIGIN'));
@@ -104,14 +119,14 @@ app.use((req, res, next) => {
 });
 app.use((req, res, next) => {
   // After successful login, redirect back to the intended page
+  // IF no user data & you did not login & did not signup & your not an API => return to last viewed page 
   if (!req.user
     && req.path !== '/login'
     && req.path !== '/signup'
     && !req.path.match(/^\/auth/)
     && !req.path.match(/\./)) {
     req.session.returnTo = req.originalUrl;
-  } else if (req.user
-    && (req.path === '/account' || req.path.match(/^\/api/))) {
+  } else if (req.user && (req.path === '/Dashboard/account' || req.path.match(/^\/api/))) {
     req.session.returnTo = req.originalUrl;
   }
   next();
@@ -123,9 +138,11 @@ app.use('/js/lib', express.static(path.join(__dirname, 'node_modules/jquery/dist
 app.use('/webfonts', express.static(path.join(__dirname, 'node_modules/@fortawesome/fontawesome-free/webfonts'), { maxAge: 31557600000 }));
 
 /**
- * Primary app routes.
+ * Primary Site routes.
  */
 app.get('/', homeController.index);
+app.get('/contact', homeController.getContact);
+app.post('/contact', homeController.postContact);
 app.get('/login', userController.getLogin);
 app.post('/login', userController.postLogin);
 app.get('/logout', userController.logout);
@@ -135,94 +152,102 @@ app.get('/reset/:token', userController.getReset);
 app.post('/reset/:token', userController.postReset);
 app.get('/signup', userController.getSignup);
 app.post('/signup', userController.postSignup);
-app.get('/contact', contactController.getContact);
-app.post('/contact', contactController.postContact);
-app.get('/account', passportConfig.isAuthenticated, userController.getAccount);
-app.post('/account/profile', passportConfig.isAuthenticated, userController.postUpdateProfile);
-app.post('/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
-app.post('/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
-app.get('/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
+
+/**
+ * Primary Dashboard routes.
+ */
+app.get('/Dashboard/account', passportConfig.isAuthenticated, userController.getAccount);
+app.post('/Dashboard/account/profile', passportConfig.isAuthenticated, userController.postUpdateProfile);
+app.post('/Dashboard/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
+app.post('/Dashboard/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
+app.get('/Dashboard/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
+app.post('/Dashboard/orgSwitch/:id', passportConfig.isAuthenticated, orgController.switchOrg);
+
+app.get('/Dashboard/Overview',
+  passportConfig.isAuthenticated,
+  orgController.accountType,
+  athleteController.findByOrg,
+  weightController.findByAthlete,
+  deviceController.findByOrg,
+  notificationController.findByAthlete,
+  dashbaordController.getOverviewPage);
+
+app.get('/Dashboard/Athletes',
+  passportConfig.isAuthenticated,
+  athleteController.findByOrg,
+  dashbaordController.getAthletesPage);
+
+app.post('/Dashboard/Athletes',
+  passportConfig.isAuthenticated,
+  athleteController.create,
+  dashbaordController.postAthletesPage);
+
+app.get('/Dashboard/Athlete/:id',
+  passportConfig.isAuthenticated,
+  athleteController.findById,
+  weightController.findByAthlete,
+  notificationController.findByAthlete,
+  dashbaordController.getAthleteProfilePage);
+
+app.post('/Dashboard/Athlete/:id',
+  passportConfig.isAuthenticated,
+  athleteController.update,
+  dashbaordController.postAthleteProfilePage);
+
+app.get('/Dashboard/Athlete/:id/weight',
+  passportConfig.isAuthenticated,
+  athleteController.findById,
+  weightController.findByAthlete,
+  dashbaordController.getWeightPage);
+
+app.post('/Dashboard/Athlete/:id/delete',
+  passportConfig.isAuthenticated,
+  athleteController.deleteOne,
+  weightController.deleteOne,
+  dashbaordController.deleteAthlete);
+
+app.post('/Dashboard/Athletes/wipe',
+  passportConfig.isAuthenticated,
+  athleteController.findByOrg,
+  weightController.deleteAll,
+  athleteController.deleteByOrg,
+  dashbaordController.deleteAthlete);
+
+app.get('/Dashboard/Settings',
+  passportConfig.isAuthenticated,
+  dashbaordController.getSettingsPage);
+
+app.post('/Dashboard/Settings',
+  passportConfig.isAuthenticated,
+  orgController.updateIOsettings,
+  dashbaordController.postSettingsPage);
+
+app.post('/Notification/:id/delete',
+  passportConfig.isAuthenticated,
+  notificationController.deleteById);
+
+
+/**
+ * Primary Device routes.
+ */
+
+app.get('/Device/:id/:authType/:authId/:wt',
+  deviceController.findById,
+  deviceController.externalAuthType,
+  athleteController.findByAuthType,
+  weightController.findLast,
+  deviceController.weightCalc,
+  weightController.new,
+  deviceController.weightResponse);
+
 
 /**
  * API examples routes.
  */
 app.get('/api', apiController.getApi);
-app.get('/api/lastfm', apiController.getLastfm);
-app.get('/api/nyt', apiController.getNewYorkTimes);
-app.get('/api/aviary', apiController.getAviary);
-app.get('/api/steam', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getSteam);
-app.get('/api/stripe', apiController.getStripe);
-app.post('/api/stripe', apiController.postStripe);
-app.get('/api/scraping', apiController.getScraping);
-app.get('/api/twilio', apiController.getTwilio);
-app.post('/api/twilio', apiController.postTwilio);
-app.get('/api/clockwork', apiController.getClockwork);
-app.post('/api/clockwork', apiController.postClockwork);
-app.get('/api/foursquare', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getFoursquare);
-app.get('/api/tumblr', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getTumblr);
-app.get('/api/facebook', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getFacebook);
-app.get('/api/github', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getGithub);
-app.get('/api/twitter', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getTwitter);
-app.post('/api/twitter', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.postTwitter);
-app.get('/api/linkedin', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getLinkedin);
-app.get('/api/instagram', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getInstagram);
-app.get('/api/paypal', apiController.getPayPal);
-app.get('/api/paypal/success', apiController.getPayPalSuccess);
-app.get('/api/paypal/cancel', apiController.getPayPalCancel);
-app.get('/api/lob', apiController.getLob);
 app.get('/api/upload', apiController.getFileUpload);
 app.post('/api/upload', upload.single('myFile'), apiController.postFileUpload);
-app.get('/api/pinterest', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getPinterest);
-app.post('/api/pinterest', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.postPinterest);
-app.get('/api/google-maps', apiController.getGoogleMaps);
 
-/**
- * OAuth authentication routes. (Sign in)
- */
-app.get('/auth/instagram', passport.authenticate('instagram'));
-app.get('/auth/instagram/callback', passport.authenticate('instagram', { failureRedirect: '/login' }), (req, res) => {
-  res.redirect(req.session.returnTo || '/');
-});
-app.get('/auth/facebook', passport.authenticate('facebook', { scope: ['email', 'public_profile'] }));
-app.get('/auth/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }), (req, res) => {
-  res.redirect(req.session.returnTo || '/');
-});
-app.get('/auth/github', passport.authenticate('github'));
-app.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/login' }), (req, res) => {
-  res.redirect(req.session.returnTo || '/');
-});
-app.get('/auth/google', passport.authenticate('google', { scope: 'profile email' }));
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => {
-  res.redirect(req.session.returnTo || '/');
-});
-app.get('/auth/twitter', passport.authenticate('twitter'));
-app.get('/auth/twitter/callback', passport.authenticate('twitter', { failureRedirect: '/login' }), (req, res) => {
-  res.redirect(req.session.returnTo || '/');
-});
-app.get('/auth/linkedin', passport.authenticate('linkedin', { state: 'SOME STATE' }));
-app.get('/auth/linkedin/callback', passport.authenticate('linkedin', { failureRedirect: '/login' }), (req, res) => {
-  res.redirect(req.session.returnTo || '/');
-});
-
-/**
- * OAuth authorization routes. (API examples)
- */
-app.get('/auth/foursquare', passport.authorize('foursquare'));
-app.get('/auth/foursquare/callback', passport.authorize('foursquare', { failureRedirect: '/api' }), (req, res) => {
-  res.redirect('/api/foursquare');
-});
-app.get('/auth/tumblr', passport.authorize('tumblr'));
-app.get('/auth/tumblr/callback', passport.authorize('tumblr', { failureRedirect: '/api' }), (req, res) => {
-  res.redirect('/api/tumblr');
-});
-app.get('/auth/steam', passport.authorize('openid', { state: 'SOME STATE' }));
-app.get('/auth/steam/callback', passport.authorize('openid', { failureRedirect: '/api' }), (req, res) => {
-  res.redirect(req.session.returnTo);
-});
-app.get('/auth/pinterest', passport.authorize('pinterest', { scope: 'read_public write_public' }));
-app.get('/auth/pinterest/callback', passport.authorize('pinterest', { failureRedirect: '/login' }), (req, res) => {
-  res.redirect('/api/pinterest');
-});
 
 /**
  * Error Handler.

@@ -4,7 +4,7 @@ block content
   .pb-2.mt-2.mb-4.border-bottom
     h3 Profile Information
 
-  form(action='/account/profile', method='POST')
+  form(action='/Dashboard/account/profile', method='POST')
     input(type='hidden', name='_csrf', value=_csrf)
     .form-group.row
       label.col-md-3.col-form-label.font-weight-bold.text-right(for='email') Email
@@ -47,7 +47,7 @@ block content
   .pb-2.mt-2.mb-4.border-bottom
     h3 Change Password
 
-  form(action='/account/password', method='POST')
+  form(action='/Dashboard/account/password', method='POST')
     input(type='hidden', name='_csrf', value=_csrf)
     .form-group.row
       label.col-md-3.col-form-label.font-weight-bold.text-right(for='password') New Password
@@ -66,7 +66,7 @@ block content
   .pb-2.mt-2.mb-4.border-bottom
     h3 Delete Account
 
-  form(action='/account/delete', method='POST', onsubmit="return confirm('Are you sure you want to delete your account?');")
+  form(action='/Dashboard/account/delete', method='POST', onsubmit="return confirm('Are you sure you want to delete your account?');")
     .form-group
       p.offset-sm-3.col-md-7.pl-2 You can delete your account, but keep in mind this action is irreversible.
       input(type='hidden', name='_csrf', value=_csrf)
@@ -80,36 +80,36 @@ block content
   .form-group
     .offset-sm-3.col-md-7.pl-2
       if user.instagram
-        p.mb-1: a.text-danger(href='/account/unlink/instagram') Unlink your Instagram account
+        p.mb-1: a.text-danger(href='/Dashboard/account/unlink/instagram') Unlink your Instagram account
       else
         p.mb-1: a(href='/auth/instagram') Link your Instagram account
     .offset-sm-3.col-md-7.pl-2
       if user.google
-        p.mb-1: a.text-danger(href='/account/unlink/google') Unlink your Google account
+        p.mb-1: a.text-danger(href='/Dashboard/account/unlink/google') Unlink your Google account
       else
         p.mb-1: a(href='/auth/google') Link your Google account
     .offset-sm-3.col-md-7.pl-2
       if user.facebook
-        p.mb-1: a.text-danger(href='/account/unlink/facebook') Unlink your Facebook account
+        p.mb-1: a.text-danger(href='/Dashboard/account/unlink/facebook') Unlink your Facebook account
       else
         p.mb-1: a(href='/auth/facebook') Link your Facebook account
     .offset-sm-3.col-md-7.pl-2
       if user.twitter
-        p.mb-1: a.text-danger(href='/account/unlink/twitter') Unlink your Twitter account
+        p.mb-1: a.text-danger(href='/Dashboard/account/unlink/twitter') Unlink your Twitter account
       else
         p.mb-1: a(href='/auth/twitter') Link your Twitter account
     .offset-sm-3.col-md-7.pl-2
       if user.github
-        p.mb-1: a.text-danger(href='/account/unlink/github') Unlink your GitHub account
+        p.mb-1: a.text-danger(href='/Dashboard/account/unlink/github') Unlink your GitHub account
       else
         p.mb-1: a(href='/auth/github') Link your GitHub account
     .offset-sm-3.col-md-7.pl-2
       if user.linkedin
-        p.mb-1: a.text-danger(href='/account/unlink/linkedin') Unlink your LinkedIn account
+        p.mb-1: a.text-danger(href='/Dashboard/account/unlink/linkedin') Unlink your LinkedIn account
       else
         p.mb-1: a(href='/auth/linkedin') Link your LinkedIn account
     .offset-sm-3.col-md-7.pl-2
       if user.steam
-        p.mb-1: a.text-danger(href='/account/unlink/steam') Unlink your Steam account
+        p.mb-1: a.text-danger(href='/Dashboard/account/unlink/steam') Unlink your Steam account
       else
         p.mb-1: a(href='/auth/steam') Link your Steam account
