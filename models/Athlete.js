@@ -17,7 +17,7 @@ const athleteSchema = new mongoose.Schema({
 
     lastName: { type: String, required: true },
 
-    gender: { type: String, enum: ["male", "female"] },
+    gender: { type: String, enum: ["Male", "Female"] },
 
     birthday: Date,
 
@@ -27,11 +27,13 @@ const athleteSchema = new mongoose.Schema({
 
     highRisk: { type: Boolean, default: false },
 
-    passcode: { type: Number, min: 1000, max: 9999, required: true, unique: true },
+    passcode: { type: Number, min: 1000, max: 9999, required: true, unique: true},
 
-    fingerprint: { type: Number, min: 10000, max: 99999 },
+    fingerprint: { type: Number, min: 10000, max: 99999, unique: true, sparse: true},
 
     bodyFat: { type: Float },
+
+    gradeLevel: { type: Number, min: 1, max: 4},
 
     organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true}
 
@@ -55,6 +57,23 @@ athleteSchema.virtual('age').get(function () {
     if (this.birthday)
         return moment().diff(this.birthday, 'years');
 });
+
+athleteSchema.virtual('gradYear').get(function () {
+    if (this.gradeLevel) {
+        // assume school is a highschool or college (4 year timespaan)
+        return moment().year() + (4-this.gradeLevel);
+    } 
+});
+
+// athleteSchema.post('update', function(error, doc, next) {
+//     if (error.name === 'MongoError' && error.code === 11000) {
+//         err.errmsg = "Passcode Must Be Unique";
+//         console.log('THISS')
+//       next(error);
+//     } else {
+//       next(error);
+//     }
+//   });
 
 athleteSchema.plugin(uniqueValidator);
 

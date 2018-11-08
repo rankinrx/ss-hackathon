@@ -2,7 +2,7 @@
  * TODO:
  * 1) Clean up error handling on middleware
  * 2) Standardize result outputs on each route
- * 3) add device routes
+ * 3) add authentication to device routes
  */
 
 /**
@@ -66,7 +66,7 @@ const app = express();
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 mongoose.set('useNewUrlParser', true);
-mongoose.connect(process.env.MONGODB_URI);
+mongoose.connect(process.env.MONGODB_URIR);
 mongoose.connection.on('error', (err) => {
   console.error(err);
   console.log('%s MongoDB connection error. Please make sure MongoDB is running.', chalk.red('✗'));
@@ -81,7 +81,7 @@ app.set('port', process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 app.use(expressStatusMonitor());
-app.use(compression());
+// app.use(compression());
 app.use(sass({
   src: path.join(__dirname, 'public'),
   dest: path.join(__dirname, 'public')
@@ -138,7 +138,7 @@ app.use('/js/lib', express.static(path.join(__dirname, 'node_modules/jquery/dist
 app.use('/webfonts', express.static(path.join(__dirname, 'node_modules/@fortawesome/fontawesome-free/webfonts'), { maxAge: 31557600000 }));
 
 /**
- * Primary Site routes.
+ * Primary Site Page routes (Login not required)
  */
 app.get('/', homeController.index);
 app.get('/contact', homeController.getContact);
@@ -152,101 +152,113 @@ app.get('/reset/:token', userController.getReset);
 app.post('/reset/:token', userController.postReset);
 app.get('/signup', userController.getSignup);
 app.post('/signup', userController.postSignup);
+app.get('/api', apiController.getApi);
 
 /**
- * Primary Dashboard routes.
+ *  Dashboard Page routes (Login required)
  */
 app.get('/Dashboard/account', passportConfig.isAuthenticated, userController.getAccount);
 app.post('/Dashboard/account/profile', passportConfig.isAuthenticated, userController.postUpdateProfile);
 app.post('/Dashboard/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
 app.post('/Dashboard/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
-app.get('/Dashboard/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
-app.post('/Dashboard/orgSwitch/:id', passportConfig.isAuthenticated, orgController.switchOrg);
 
 app.get('/Dashboard/Overview',
   passportConfig.isAuthenticated,
-  orgController.accountType,
-  athleteController.findByOrg,
-  weightController.findByAthlete,
   deviceController.findByOrg,
-  notificationController.findByAthlete,
+  athleteController.findByOrg,
+  weightController.findByAthleteStack,
+  notificationController.findByAthleteStack,
   dashbaordController.getOverviewPage);
-
+  
 app.get('/Dashboard/Athletes',
   passportConfig.isAuthenticated,
   athleteController.findByOrg,
+  weightController.findByAthleteStack,
   dashbaordController.getAthletesPage);
 
 app.post('/Dashboard/Athletes',
   passportConfig.isAuthenticated,
-  athleteController.create,
+  athleteController.new,
   dashbaordController.postAthletesPage);
 
 app.get('/Dashboard/Athlete/:id',
   passportConfig.isAuthenticated,
   athleteController.findById,
-  weightController.findByAthlete,
-  notificationController.findByAthlete,
+  weightController.findByAthleteStack,
+  notificationController.findByAthleteStack,
   dashbaordController.getAthleteProfilePage);
-
 app.post('/Dashboard/Athlete/:id',
   passportConfig.isAuthenticated,
-  athleteController.update,
+  athleteController.updateById,
   dashbaordController.postAthleteProfilePage);
-
 app.get('/Dashboard/Athlete/:id/weight',
   passportConfig.isAuthenticated,
   athleteController.findById,
-  weightController.findByAthlete,
+  weightController.findByAthleteStack,
   dashbaordController.getWeightPage);
-
-app.post('/Dashboard/Athlete/:id/delete',
-  passportConfig.isAuthenticated,
-  athleteController.deleteOne,
-  weightController.deleteOne,
-  dashbaordController.deleteAthlete);
-
-app.post('/Dashboard/Athletes/wipe',
-  passportConfig.isAuthenticated,
-  athleteController.findByOrg,
-  weightController.deleteAll,
-  athleteController.deleteByOrg,
-  dashbaordController.deleteAthlete);
-
 app.get('/Dashboard/Settings',
   passportConfig.isAuthenticated,
   dashbaordController.getSettingsPage);
-
 app.post('/Dashboard/Settings',
   passportConfig.isAuthenticated,
-  orgController.updateIOsettings,
+  orgController.update,
   dashbaordController.postSettingsPage);
 
-app.post('/Notification/:id/delete',
+
+  /**
+ * Dashboard API routes.
+ */
+app.post('/Dashboard/api/org/select/:id',
   passportConfig.isAuthenticated,
-  notificationController.deleteById);
-
+  orgController.updateCurrentOrg);
+app.post('/Dashboard/api/athlete/:id/delete',
+  passportConfig.isAuthenticated,
+  athleteController.deleteById,
+  weightController.deleteByAthleteId,
+  notificationController.deleteByAthleteId,
+  dashbaordController.deleteAthlete);
+app.post('/Dashboard/api/athletes/delete',
+  passportConfig.isAuthenticated,
+  athleteController.findByOrg,
+  weightController.deleteByAthleteStack,
+  notificationController.deleteByAthleteStack,
+  athleteController.deleteByOrg,
+  dashbaordController.deleteAthlete);
+app.post('/Dashboard/api/notification/:id/delete',
+  passportConfig.isAuthenticated,
+  notificationController.deleteById,
+  dashbaordController.deleteNotification);
+app.post('/Dashboard/api/device/new',
+  passportConfig.isAuthenticated,
+  deviceController.new);
 
 /**
- * Primary Device routes.
+ *  Primary Device routes.
  */
 
-app.get('/Device/:id/:authType/:authId/:wt',
+app.get('/Device/:id/io/:authType/:authId/:wt',
   deviceController.findById,
-  deviceController.externalAuthType,
   athleteController.findByAuthType,
-  weightController.findLast,
-  deviceController.weightCalc,
+  weightController.findByIo,
+  deviceController.ioWeightCalc,
   weightController.new,
-  deviceController.weightResponse);
+  notificationController.new,
+  deviceController.resNewWeight);
+app.get('/Device/:id/s/:authType/:authId/:wt',
+  deviceController.findById,
+  athleteController.findByAuthType,
+  deviceController.sWeightCalc,
+  weightController.new,
+  deviceController.resNewWeight);
 
 
 /**
- * API examples routes.
+ * API routes.
  */
-app.get('/api', apiController.getApi);
 app.get('/api/upload', apiController.getFileUpload);
 app.post('/api/upload', upload.single('myFile'), apiController.postFileUpload);
+
+
 
 
 /**

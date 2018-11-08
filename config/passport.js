@@ -1,8 +1,8 @@
- /**
- * TODO: 
- * 1) if user has access to multiple orgs?
- * 2) 
- */
+/**
+* TODO: 
+* 1) if user has access to multiple orgs?
+* 2) 
+*/
 const passport = require('passport');
 const { Strategy: LocalStrategy } = require('passport-local');
 
@@ -23,6 +23,7 @@ passport.deserializeUser((id, done) => {
 
 /**
  * Sign in using Email and Password.
+ * (req.session): currentOrg
  */
 passport.use(new LocalStrategy({
   usernameField: 'email',
@@ -31,40 +32,29 @@ passport.use(new LocalStrategy({
 },
   function (req, email, password, done) {
     User.findOne({ email: email.toLowerCase() }, function (err, user) {
-      if (err)
-        return done(err);
-      if (!user)
-        return done(null, false, { msg: 'No user found' });
-      if (!user.validPassword(password))
-        return done(null, false, { msg: 'wrong password' });
 
-      // Set the currentOrg variable
-      Organization.findOne({
-        "users": user._id
-      }, function (err, organization) {
+      if (err) return done(err);
 
-        if (organization && organization.name) {
-          req.session.currentOrg = organization;
+      if (!user) return done(null, false, { code: 7002, msg: 'User Not Found' });
+
+      if (!user.validPassword(password)) return done(null, false, { code: 7005, msg: 'Incorrect Password' });
+
+      Organization.find({ "users": user._id }, (err, theOrgs) => {
+
+        if (!theOrgs.length) {
+
+          req.session.orgStack = [];
+
+          return done("E7001: User not associated with a organization");
+
+        } else {
+
+          req.session.orgStack = theOrgs;
+
           return done(null, user);
+
         }
-        // else {
-
-        //   var org = "Organization " + parseInt(Math.random() * 100).toString();
-
-        //   var organization = new Organization();
-
-        //   organization.name = org;
-        //   organization.users = [user];
-        //   organization.save(function (err, result) {
-        //     if (err)
-        //       return done(null, false, { msg: err });
-        //     req.session.currentOrg = result;
-        //     return done(null, user);
-        //   });
-        // }
-
-      })
-
+      });
     });
   }));
 

@@ -1,8 +1,3 @@
- /**
- * TODO: 
- * 1) modify postLogin to ask user if associated with more than 1 org
- * 2) 
- */
 const { promisify } = require('util');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -10,12 +5,7 @@ const passport = require('passport');
 const User = require('../models/User');
 
 const randomBytesAsync = promisify(crypto.randomBytes);
-/**
- * S
- * I
- * T
- * E
- */
+
 /**
  * GET /login
  * Login page.
@@ -39,25 +29,58 @@ exports.postLogin = (req, res, next) => {
   req.sanitize('email').normalizeEmail({ gmail_remove_dots: false });
 
   const errors = req.validationErrors();
-
+  
   if (errors) {
-    // for Flash can have 'errors' info' or 'success'
-    req.flash('errors', errors);
-    return res.redirect('/login');
+    let errorMsg = [];
+    
+    errors.forEach(function (error) {
+      errorMsg.push({
+        msg: error.msg
+      });
+    });
+
+    req.flash('errors', errorMsg);
+    
+    return res.json({ msg: req.flash() })
+
   }
 
   passport.authenticate('local', (err, user, info) => {
+
     if (err) { return next(err); }
+
     if (!user) {
+
       req.flash('errors', info);
-      return res.redirect('/login');
+
+      return res.json({ msg: req.flash() })
+
     }
+
     req.logIn(user, (err) => {
+
       if (err) { return next(err); }
+
       req.flash('success', { msg: 'Success! You are logged in.' });
-      res.redirect(req.session.returnTo || '/');
+
+      return res.json({
+
+        msg: req.flash(),
+
+        data: {
+          user: user,
+
+          organizations: req.session.orgStack,
+
+          lastPage: req.session.returnTo
+        }
+
+      });
+
     });
+
   })(req, res, next);
+
 };
 
 /**
@@ -67,9 +90,14 @@ exports.postLogin = (req, res, next) => {
 exports.logout = (req, res) => {
   req.logout();
   req.session.destroy((err) => {
+
     if (err) console.log('Error : Failed to destroy the session during logout.', err);
+
     req.user = null;
-    res.redirect('/');
+
+    return res.json({ msg: 'Success! You are logged out.' })
+
+    //res.redirect('/');
   });
 };
 
@@ -333,18 +361,6 @@ exports.postForgot = (req, res, next) => {
 };
 
 /**
- * D
- * A
- * S
- * H
- * B
- * O
- * A
- * R
- * D
- */
-
-/**
  * GET /Dashboard/account
  * Profile page.
  */
@@ -372,8 +388,10 @@ exports.postUpdateProfile = (req, res, next) => {
   User.findById(req.user.id, (err, user) => {
     if (err) { return next(err); }
     user.email = req.body.email || '';
-    user.profile.firstName = req.body.name || '';
+    user.profile.firstName = req.body.firstName || '';
+    user.profile.lastName = req.body.lastName || '';
     user.profile.location = req.body.location || '';
+    user.profile.role = req.body.role;
     user.save((err) => {
       if (err) {
         if (err.code === 11000) {
@@ -424,23 +442,5 @@ exports.postDeleteAccount = (req, res, next) => {
     req.logout();
     req.flash('info', { msg: 'Your account has been deleted.' });
     res.redirect('/');
-  });
-};
-
-/**
- * GET /Dashboard/account/unlink/:provider
- * Unlink OAuth provider.
- */
-exports.getOauthUnlink = (req, res, next) => {
-  const { provider } = req.params;
-  User.findById(req.user.id, (err, user) => {
-    if (err) { return next(err); }
-    user[provider] = undefined;
-    user.tokens = user.tokens.filter(token => token.kind !== provider);
-    user.save((err) => {
-      if (err) { return next(err); }
-      req.flash('info', { msg: `${provider} account has been unlinked.` });
-      res.redirect('/Dashboard/account');
-    });
   });
 };

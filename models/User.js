@@ -45,11 +45,11 @@ userSchema.pre('save', function save(next) {
 });
 
 /**
- * Helper method for generating user's fullname.
+ * Virtual for generating user's full name.
  */
-userSchema.methods.fullName = function () {
-  return this.firstName + " " + this.lastName;
-};
+userSchema.virtual('fullName').get(function () {
+  return this.profile.firstName + ' ' + this.profile.lastName;
+});
 
 /**
  * Helper method for validating user's password.

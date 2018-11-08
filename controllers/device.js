@@ -1,68 +1,140 @@
 /**
- * RULES:
- * A) DO NOT INCLUDE OTHER MODELS
- * 
- * TODO:
- * 
- */
+* RULES: 
+* - CREATE: res.locals.deviceStack = theDevice || ERROR
+* - FIND: res.locals.deviceStack = [theDevices] || []
+* - CALC: res.locals.calcStack = calcs 
+*/
+
 const Device = require("../models/Device");
 
 /**
- * QUERY find the device by org
+ * Create New Device
+ * CODE: 51XX
+ * (req.session): currentOrg (REQUIRED)
+ * (res.locals): deviceStack = [theDevice] || []
+ */
+exports.new = (req, res, next) => {
+
+    res.locals.deviceStack = [];
+
+    if (!req.session.currentOrg) return next("E5211: Missing Session 'currentOrg' ");
+
+    const newDevice = new Device();
+    newDevice.name = "Device " + parseInt(Math.random() * 100).toString();
+    newDevice.organization = req.session.currentOrg;
+
+    newDevice.save((err, theDevice) => {
+
+        if (err) { return next(err); }
+
+        res.locals.deviceStack.push(theDevice);
+
+        req.flash('success', { code: 5103, msg: 'Created Device' });
+
+        return res.json({
+
+            msg: req.flash(),
+    
+            data: res.locals.deviceStack
+    
+        });
+
+    });
+
+};
+
+/**
+ * Find All Devices by Organization
+ * CODE: 52XX
+ * (req.session): currentOrg (REQUIRED)
+ * (res.locals): deviceStack = [theDevices] || []
  */
 exports.findByOrg = (req, res, next) => {
+
+    res.locals.deviceStack = [];
+
+    if (!req.session.currentOrg) return next("E5211: Missing Session 'currentOrg' ");
 
     Device.find({ organization: req.session.currentOrg._id }, (err, theDevices) => {
 
         if (err) { return next(err); }
 
-        res.locals.deviceStack = theDevices;
+        if (!theDevices.length) {
 
-        next();
+            req.flash('errors', { code: 5202, msg: 'Device Not Found' });
+
+        } else {
+
+            res.locals.deviceStack = theDevices;
+
+            req.flash('success', { code: 5201, msg: 'Device Found' });
+        }
+
+        return next();
     });
 };
 
 /**
- * GET user's subscription type
+ * Find Single Device by ID
+ * CODE: 53XX
+ * (req.params): id (REQUIRED)
+ * (res.locals): deviceStack = [theAthlete] || []
  */
 exports.findById = (req, res, next) => {
+
+    res.locals.deviceStack = [];
+
+    if (!req.params.id) return next("E5331: Missing Parameter 'id' ");
 
     Device.findOne({ _id: req.params.id }, (err, theDevice) => {
 
         if (err) { return next(err); }
 
-        res.locals.deviceStack = theDevice;
+        if (!theDevice) {
 
-        next();
+            req.flash('errors', { code: 5302, msg: 'Device Not Found' });
+
+        } else {
+
+            req.flash('success', { code: 5301, msg: 'Device Found' });
+
+            res.locals.deviceStack.push(theDevice);
+        }
+
+        return next();
+
     });
+
 };
 
 /**
- * GET user's subscription type
+ * Calculate Properties for a new IN/OUT weight
+ * CODE: 54XX
+ * (req.session): currentOrg (REQUIRED)
+ * (req.params): wt (REQUIRED)
+ * (res.locals): athleteStack (REQUIRED), weightStack (REQUIRED), calcStack = [calcs] || []
  */
-exports.externalAuthType = (req, res, next) => {
+exports.ioWeightCalc = async (req, res, next) => {
 
-    if (req.params.authType != "fingerprint" && req.params.authType != "passcode")
+    res.locals.calcStack = [];
 
-        return res.json({ msg: "Invalid Request" });
+    if (!req.session.currentOrg) return next("E5411: Missing Session 'currentOrg' ");
+    if (res.locals.athleteStack.length != 1) return next("E5422: Missing Locals 'athleteStack' ");
+    if (!res.locals.weightStack) return next("E5422: Missing Locals 'weightStack' ");
+    if (!req.params.wt) return next("E5433: Incorrect Parameter 'wt'");
 
-    res.locals.authType = req.params.authType;
+    const athlete = res.locals.athleteStack[0];
 
-    next();
-};
-
-/**
- * CALC new weight entry
- */
-exports.weightCalc = async(req, res, next) => {
-    const athlete = res.locals.athleteStack;
     const orgSettings = req.session.currentOrg;
+
     const lastRecords = res.locals.weightStack;
-    const measurement = Number(req.params.wt);
+
+    const measurement = parseFloat(req.params.wt);
 
     const today = new Date();
 
     const calcs = { type: null, delta: null, ioFlag: null, deltaFlag: null, calcMsg: null, wtMsg: null };
+
     // If new record, => IN
     if (lastRecords.length === 0) {
         calcs.type = "IN";
@@ -119,23 +191,76 @@ exports.weightCalc = async(req, res, next) => {
     }
 
     if (athlete.showWeight) {
-        calcs.wtMsg = `Weighed ${calcs.type} at ${measurement} lbs.`;
+        calcs.wtMsg = `Weight ${calcs.type} at ${measurement} lbs.`;
     } else {
-        calcs.wtMsg = `Weighed ${calcs.type}.`;
+        calcs.wtMsg = `Weight ${calcs.type}.`;
     }
-    res.locals.calcs = calcs;
-    next();
+
+    res.locals.calcStack.push(calcs);
+
+    req.flash('success', { code: 5403, msg: 'Created New IN/OUT Weight' });
+
+    return next();
 };
 
 /**
- * GET user's subscription type
+ * Calculate Properties for a new SAVE weight
+ * CODE: 55XX
+ * (req.params): wt (REQUIRED)
+ * (res.locals): athleteStack, weightStack, calcs = [calcs] || []
  */
-exports.weightResponse = (req, res, next) => {
-    res.json(res.locals.calcs)
+exports.sWeightCalc = async (req, res, next) => {
+
+    res.locals.calcStack = [];
+
+    if (res.locals.athleteStack.length != 1) return next("E5522: Missing Locals 'athleteStack' ");
+    if (!req.params.wt) return next("E5433: Incorrect Parameter 'wt'");
+
+    const athlete = res.locals.athleteStack[0];
+
+    const measurement = parseFloat(req.params.wt);
+
+    const calcs = { type: "SAVE", delta: null, ioFlag: false, deltaFlag: false, calcMsg: null, wtMsg: null };
+
+    if (athlete.showWeight) {
+        calcs.wtMsg = `Weight Saved at ${measurement} lbs.`;
+    } else {
+        calcs.wtMsg = `Weight Saved`;
+    }
+
+    res.locals.calcStack.push(calcs);
+
+    req.flash('success', { code: 5503, msg: 'Created New SAVE Weight' });
+
+    return next();
 };
 
+/**
+ * JSON RESPONSE: Create New Weight Entry
+ * (res.locals): weightStack
+ * DONE
+ */
+exports.resNewWeight = (req, res, next) => {
 
+    return res.json({
+
+        msg: req.flash(),
+        
+        data: {
+            wtMsg: res.locals.calcStack[0].wtMsg,
+            calcMsg: res.locals.calcStack[0].calcMsg,
+            entry: res.locals.weightStack[0]
+        }
+    });
+
+};
+
+/**
+ * Function for Rounding Weight Calculations
+ */
 function precisionRound(number, precision) {
-    var factor = Math.pow(10, precision);
+
+    const factor = Math.pow(10, precision);
+
     return Math.round(number * factor) / factor;
 }

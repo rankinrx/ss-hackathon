@@ -1,27 +1,25 @@
-/**
- * RULES:
- * A) DO NOT ANY MODELS
- * 
- * TODO:
- * 
- */
-
- 
+const moment = require("moment");
+const _ = require('lodash');
 /**
  * GET overview page
  */
 exports.getOverviewPage = (req, res, next) => {
 
-    const info = {
-        account: res.locals.account,
-        numAthletes: res.locals.athleteStack.length,
-        numRecords: res.locals.weightStack.length,
-        numDevices: res.locals.deviceStack.length
-    };
-
     return res.json({
-        Info: info,
-        Notifications: res.locals.notificationStack
+
+        msg: req.flash(),
+
+        data: {
+            notifications: res.locals.notificationStack,
+            info: {
+                account: req.session.currentOrg.subscription,
+                numDevices: res.locals.deviceStack.length,
+                numAthletes: res.locals.athleteStack.length,
+                numRecords: res.locals.weightStack.length
+
+            }
+        }
+
     });
 };
 
@@ -29,21 +27,59 @@ exports.getOverviewPage = (req, res, next) => {
  * GET athletes page
  */
 exports.getAthletesPage = (req, res, next) => {
-    const theAthletes = res.locals.athleteStack;
-    var results = [];
 
-    theAthletes.forEach(function (athlete) {
-        results.push({
-            id: athlete._id,
-            fullName: athlete.fullName,
-            gender: athlete.gender,
-            sport: athlete.sport,
-            showWeight: athlete.showWeight,
-            highRisk: athlete.highRisk
-        });
+    const theAthletes = res.locals.athleteStack;
+
+    const theWeights = res.locals.weightStack;
+
+    let athleteResults = [];
+
+    const groupedByAthlete = _.groupBy(theWeights, function (weight) {
+        return weight.athlete;
     });
+
+    // if (theWeights) {
+
+    //     theWeights.forEach(function (weight) {
+    //         let index = theAthletes.findIndex(athlete => athlete._id === weight.athlete);
+    //         if (!theAthletes[index].weight) theAthletes[index].weight = [];
+    //         theAthletes[index].weight.push(weight)
+    //     });
+    // }
+
+    // return res.json(theWeights)
+
+    if (theAthletes) {
+        theAthletes.forEach(function (athlete) {
+            if(groupedByAthlete[athlete._id]) {
+                athlete.lastMeasured = moment(groupedByAthlete[athlete._id][0].createdAt).format("L");
+            } else {
+                athlete.lastMeasured = "No Entry";
+            }
+            athleteResults.push({
+                id: athlete._id,
+                fullName: athlete.fullName,
+                gradeYear: athlete.gradYear,
+                sport: athlete.sport,
+                age: athlete.age,
+                gender: athlete.gender,
+                showWeight: athlete.showWeight,
+                highRisk: athlete.highRisk,
+                lastMeasured: athlete.lastMeasured
+            });
+        });
+    }
+
     return res.json({
-        Athletes: results
+
+        msg: req.flash(),
+
+        data: {
+
+            athletes: athleteResults
+
+        }
+
     });
 };
 
@@ -52,8 +88,12 @@ exports.getAthletesPage = (req, res, next) => {
  */
 exports.postAthletesPage = (req, res, next) => {
 
-    res.json({
-        msg: 'Created Athlete!'
+    return res.json({
+
+        msg: req.flash(),
+
+        data: res.locals.athleteStack
+
     });
 };
 
@@ -63,7 +103,8 @@ exports.postAthletesPage = (req, res, next) => {
 exports.getAthleteProfilePage = (req, res, next) => {
     const theAthlete = res.locals.athleteStack[0];
     const theNotifications = res.locals.notificationStack;
-    // const theWeights = res.locals.weightStack;
+    const theWeights = res.locals.weightStack;
+    const notificationsResults = [];
 
     const athleteResult = {
         id: theAthlete._id,
@@ -80,27 +121,25 @@ exports.getAthleteProfilePage = (req, res, next) => {
         passcode: theAthlete.passcode
     };
 
-    const notificationsResults = [];
+    if (theNotifications) {
 
-    theNotifications.forEach(function (notification) {
-        notificationsResults.push({
-            body: notification.body
+        theNotifications.forEach(function (notification) {
+            notificationsResults.push({
+                body: notification.body
+            });
         });
-    });
 
-    // const weightResults = [];
-
-    // theWeights.forEach(function (weight) {
-    //     weightResults.push({
-    //         weight: weight.weight,
-    //         time: weight.createdAt
-    //     });
-    // });
+    }
 
     return res.json({
-        Athlete: athleteResult,
-        Noticiations: notificationsResults
-        // Weights: weightResults
+
+        msg: req.flash(),
+        data: {
+            athlete: athleteResult,
+            notifications: notificationsResults,
+            weights: theWeights
+        }
+
     });
 };
 
@@ -110,16 +149,11 @@ exports.getAthleteProfilePage = (req, res, next) => {
 exports.postAthleteProfilePage = (req, res, next) => {
 
     return res.json({
-        msg: 'Updated Athlete!'
-    });
-};
 
-/**
- * Delete athlete (remove later)
- */
-exports.deleteAthlete = (req, res, next) => {
-    return res.json({
-        msg: 'Deleted athletes and associated weights!'
+        msg: req.flash(),
+
+        data: res.locals.athleteStack
+
     });
 };
 
@@ -127,40 +161,50 @@ exports.deleteAthlete = (req, res, next) => {
  * GET athlete weight page
  */
 exports.getWeightPage = (req, res, next) => {
+
     const theAthlete = res.locals.athleteStack[0];
     const theWeights = res.locals.weightStack;
-    if(!theAthlete) {
-        return res.json({
-            msg: 'Athlete not found!'
-        });
-     }
-
-    const athleteResult = {
-        id: theAthlete._id,
-        fullName: theAthlete.fullName,
-        org: req.session.currentOrg.name,
-        age: theAthlete.age,
-        bodyFat: theAthlete.bodyFat,
-        birthday: theAthlete.dmy_Bday,
-        sport: theAthlete.sport,
-        gender: theAthlete.gender
-    };
     const weightResults = [];
-    theWeights.forEach(function (weight) {
-        weightResults.push({
-            type: weight.type,
-            date: weight.dmyDate,
-            time: weight.time,
-            weight: weight.weight,
-            delta: weight.delta
+    const athleteResults = [];
 
+    if (theAthlete) {
+        athleteResults.push({
+            id: theAthlete._id,
+            fullName: theAthlete.fullName,
+            org: req.session.currentOrg.name,
+            age: theAthlete.age,
+            bodyFat: theAthlete.bodyFat,
+            birthday: theAthlete.dmy_Bday,
+            sport: theAthlete.sport,
+            gender: theAthlete.gender
         });
-    });
+    }
+
+    
+
+    if (theWeights) {
+        theWeights.forEach(function (weight) {
+            weightResults.push({
+                type: weight.type,
+                date: weight.dmyDate,
+                time: weight.time,
+                weight: weight.weight,
+                delta: weight.delta
+
+            });
+        });
+    }
 
     return res.json({
-        Athlete: athleteResult,
-        Weights: weightResults
+
+        msg: req.flash(),
+        data: {
+            athlete: athleteResults,
+            weight: weightResults
+        }
+
     });
+
 };
 
 /**
@@ -170,13 +214,26 @@ exports.getSettingsPage = (req, res, next) => {
 
     const settingsResult = {
         ioMessage: req.session.currentOrg.ioMessage,
+
         ioPercent: req.session.currentOrg.ioPercent,
+
         iiMessage: req.session.currentOrg.iiMessage,
+
         iiPercent: req.session.currentOrg.iiPercent
     };
 
+    req.flash('success', { msg: 'Settings Found' });
+
     return res.json({
-        Settings: settingsResult
+
+        msg: req.flash(),
+
+        data: {
+
+            settings: settingsResult
+
+        }
+
     });
 };
 
@@ -186,6 +243,42 @@ exports.getSettingsPage = (req, res, next) => {
 exports.postSettingsPage = (req, res, next) => {
 
     return res.json({
-        msg: 'Organization updated!'
+
+        msg: req.flash(),
+
+    });
+};
+
+/**
+ * Delete athlete
+ */
+exports.deleteAthlete = (req, res, next) => {
+
+    return res.json({
+
+        msg: req.flash(),
+
+        data: {
+            athletes: res.locals.athleteStack,
+            weights: res.locals.weightStack,
+            notifications: res.locals.notificationStack
+        }
+
+    });
+};
+
+/**
+ * Delete single notification
+ */
+exports.deleteNotification = (req, res, next) => {
+
+    return res.json({
+
+        msg: req.flash(),
+
+        data: {
+            notification: res.locals.notificationStack
+        }
+
     });
 };

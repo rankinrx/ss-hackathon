@@ -16,7 +16,7 @@ const deviceSchema = new mongoose.Schema({
 
     organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' },
 
-    access: { type: Boolean, default: false }
+    access: { type: Boolean, default: true }
 
 }, { timestamps: true });
 

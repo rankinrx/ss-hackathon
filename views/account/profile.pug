@@ -11,9 +11,17 @@ block content
       .col-md-7
         input.form-control(type='email', name='email', id='email', value=user.email, autocomplete='email')
     .form-group.row
-      label.col-md-3.col-form-label.font-weight-bold.text-right(for='name') Name
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='firstName') First Name
       .col-md-7
-        input.form-control(type='text', name='name', id='name', value=user.profile.name, autocomplete='name')
+        input.form-control(type='text', name='firstName', id='firstName', value=user.profile.firstName, autocomplete='firstName')
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='lastName') Last Name
+      .col-md-7
+        input.form-control(type='text', name='lastName', id='lastName', value=user.profile.lastName, autocomplete='lastName')
+    .form-group.row
+      label.col-md-3.col-form-label.font-weight-bold.text-right(for='role') Role
+      .col-md-7
+        input.form-control(type='text', name='role', id='role', value=user.profile.role, autocomplete='role')
     .form-group.row
       label.col-md-3.col-form-label.font-weight-bold.text-right Gender
       .col-sm-6
