@@ -95,13 +95,13 @@ exports.updateCurrentOrg = (req, res, next) => {
 
   if (!req.params.id) return next("E4331: Missing Parameter 'id' ");
 
-  if (req.session.currentOrg && req.params.id == req.session.currentOrg._id) {
+  // if (req.session.currentOrg && req.params.id == req.session.currentOrg._id) {
 
-    req.flash('errors', { code: 4307, msg: 'No Changes' });
+  //   req.flash('errors', { code: 4307, msg: 'No Changes' });
 
-    return res.json({ msg: req.flash() });
+  //   return res.json({ msg: req.flash() });
 
-  }
+  // }
 
   Organization.findById(req.params.id, (err, theOrg) => {
 

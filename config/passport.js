@@ -80,3 +80,13 @@ exports.isAuthorized = (req, res, next) => {
     res.redirect(`/auth/${provider}`);
   }
 };
+
+/**
+ * Check user authentication
+ */
+exports.isUserAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return res.json(true)
+  }
+  return res.json(false)
+};

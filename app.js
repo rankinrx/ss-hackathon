@@ -103,15 +103,15 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
-app.use((req, res, next) => {
-  if (req.path === '/api/upload') {
-    next();
-  } else {
-    lusca.csrf({ cookie: "cookieName" })(req, res, next);
-  }
-});
-app.use(lusca.xframe('SAMEORIGIN'));
-app.use(lusca.xssProtection(true));
+// app.use((req, res, next) => {
+//   if (req.path === '/api/upload') {
+//     next();
+//   } else {
+//     lusca.csrf({ cookie: "cookieName" })(req, res, next);
+//   }
+// });
+// app.use(lusca.xframe('SAMEORIGIN'));
+// app.use(lusca.xssProtection(true));
 app.disable('x-powered-by');
 app.use((req, res, next) => {
   res.locals.user = req.user;
@@ -231,6 +231,8 @@ app.post('/Dashboard/api/notification/:id/delete',
 app.post('/Dashboard/api/device/new',
   passportConfig.isAuthenticated,
   deviceController.new);
+app.get('/Dashboard/api/isAuthenticated',
+  passportConfig.isUserAuthenticated);
 
 /**
  *  Primary Device routes.

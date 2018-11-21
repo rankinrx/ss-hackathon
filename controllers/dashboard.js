@@ -12,6 +12,7 @@ exports.getOverviewPage = (req, res, next) => {
         data: {
             notifications: res.locals.notificationStack,
             info: {
+                org: req.session.currentOrg._id,
                 account: req.session.currentOrg.subscription,
                 numDevices: res.locals.deviceStack.length,
                 numAthletes: res.locals.athleteStack.length,
