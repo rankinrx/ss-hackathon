@@ -20,8 +20,6 @@ exports.findByUser = (req, res, next) => {
 
     res.locals.orgStack = theOrgs;
 
-    req.flash('success', { code: 4101, msg: `Organization Found` });
-
     return next();
 
   });
@@ -60,9 +58,7 @@ exports.update = (req, res, next) => {
 
     && !req.body.subscription && !req.body.users) {
 
-    req.flash('errors', { code: 4207, msg: 'No Changes' });
-
-    return next();
+      return res.status(400).send("No Change");
 
   }
 
@@ -72,12 +68,10 @@ exports.update = (req, res, next) => {
 
     if (!savedOrg) {
 
-      req.flash('errors', { code: 4202, msg: 'Organization Not Found' });
+      return res.status(404).send('Organization Not Found');
     }
 
     req.session.currentOrg = savedOrg;
-
-    req.flash('success', { code: 4204, msg: 'Updated Organization' });
 
     return next();
 
@@ -95,29 +89,19 @@ exports.updateCurrentOrg = (req, res, next) => {
 
   if (!req.params.id) return next("E4331: Missing Parameter 'id' ");
 
-  // if (req.session.currentOrg && req.params.id == req.session.currentOrg._id) {
-
-  //   req.flash('errors', { code: 4307, msg: 'No Changes' });
-
-  //   return res.json({ msg: req.flash() });
-
-  // }
-
   Organization.findById(req.params.id, (err, theOrg) => {
 
     if (err) { return next(err); }
 
     if (!theOrg) {
 
-      req.flash('errors', { code: 4302, msg: 'Organization Not Found' });
+      return res.status(404).send('Organization Not Found');
 
     } else {
 
       req.session.currentOrg = theOrg;
 
-      req.flash('success', { code: 4304, msg: "Updated 'currentOrg'" });
-
-      return res.json({ msg: req.flash(), data: req.session.currentOrg });
+      return res.json({ data: req.session.currentOrg });
 
     }
 

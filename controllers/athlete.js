@@ -15,9 +15,7 @@ exports.new = (req, res, next) => {
 
     if (!req.body.firstName || !req.body.lastName || !req.body.passcode || !req.body.sport) {
 
-        req.flash('errors', { code: 1106, msg: 'Please complete all required fields' });
-
-        return next();
+        return res.status(400).send('Complete Required Fields');
     }
 
     const newAthlete = new Athlete();
@@ -28,7 +26,7 @@ exports.new = (req, res, next) => {
 
     newAthlete.passcode = req.body.passcode;
 
-    newAthlete.sport = req.body.sport;
+    newAthlete.sport = req.body.sport.split(",");
 
     newAthlete.organization = req.session.currentOrg._id;
 
@@ -40,31 +38,28 @@ exports.new = (req, res, next) => {
 
             res.locals.athleteStack = existingAthlete;
 
-            req.flash('errors', { code: 1108, msg: 'Account with that passcode already exists' });
-
-            return next();
+            return res.status(400).send("Passcode Exists")
 
         } else {
 
             newAthlete.save((err, savedAthlete) => {
 
                 if (err) {
-                    // return res.json(err)
+
                     if (err.errors.passcode) {
                         if (err.errors.passcode.kind === "unique") {
-                            req.flash('errors', { code: 1508, msg: 'Passcode Exists' });
+                            // TODO: implement way to check for passcode in "update" so we can remove this
+                            return res.status(400).send("Passcode Exists")
                         }
                         if (err.errors.passcode.kind === "max" || err.errors.passcode.kind === "min") {
-                            req.flash('errors', { code: 1509, msg: 'Passcode Out of Range ' });
+
+                            return res.status(400).send('Passcode Out of Range');
                         }
-                        return next();
 
                     } else { return next(err); }
                 }
 
                 res.locals.athleteStack.push(savedAthlete);
-
-                req.flash('success', { code: 1103, msg: 'Created New Athlete' });
 
                 return next();
 
@@ -91,16 +86,7 @@ exports.findByOrg = (req, res, next) => {
 
         if (err) { return next(err); }
 
-        if (!theAthletes.length) {
-
-            req.flash('errors', { code: 1202, msg: 'Athlete Not Found' });
-
-        } else {
-
-            res.locals.athleteStack = theAthletes;
-
-            req.flash('success', { code: 1201, msg: `Athlete Found` });
-        }
+        res.locals.athleteStack = theAthletes;
 
         return next();
     });
@@ -122,21 +108,19 @@ exports.findById = (req, res, next) => {
 
         if (err) {
 
-            if(err.name === "CastError") return next("E1334: Incorrect Parameter 'id' ");
+            if (err.name === "CastError") return next("E1334: Incorrect Parameter 'id' ");
 
-            else {return next(err);}
+            else { return next(err); }
 
-        } 
+        }
 
         if (!theAthlete) {
 
-            req.flash('errors', { code: 1302, msg: 'Athlete Not Found' });
+            return res.status(404).send("Athlete Not Found")
 
         } else {
 
-            res.locals.athleteStack.push(theAthlete);
-
-            req.flash('success', { code: 1301, msg: `Athlete Found` });
+        res.locals.athleteStack.push(theAthlete);
 
         }
 
@@ -164,13 +148,11 @@ exports.findByAuthType = (req, res, next) => {
 
         if (!theAthlete.length) {
 
-            req.flash('errors', { code: 1402, msg: 'Athlete Not Found' });
+            return res.status(404).send('Athlete Not Found');
 
         } else {
 
             res.locals.athleteStack = theAthlete;
-
-            req.flash('success', { code: 1401, msg: `Athlete Found` });
 
         }
 
@@ -200,15 +182,15 @@ exports.updateById = (req, res, next) => {
 
     if (req.body['bodyFat']) req.body.bodyFat = parseFloat(req.body.bodyFat);
 
+    if (req.body['sport']) req.body.sport = req.body.sport.split(",");
+
     Athlete.findById(req.params.id).where({ organization: req.session.currentOrg }).exec((err, theAthlete) => {
 
         if (err) { return next(err); }
 
         if (!theAthlete) {
-
-            req.flash('errors', { code: 1502, msg: 'Athlete Not Found' });
-
-            return next();
+            
+            return res.status(404).send('Athlete Not Found');
 
         }
 
@@ -224,9 +206,7 @@ exports.updateById = (req, res, next) => {
 
             && !req.body.showWeight && !req.body.highRisk && !req.body.passcode && !req.body.bodyFat && !req.body.fingerprint) {
 
-            req.flash('errors', { code: 1507, msg: 'No Changes' });
-
-            return next();
+            return res.status(400).send("No Change");
 
         }
 
@@ -237,38 +217,33 @@ exports.updateById = (req, res, next) => {
             if (err) {
                 if (err.errors.fingerprint) {
                     if (err.errors.fingerprint.kind === "unique") {
-                        req.flash('errors', { code: 1508, msg: 'Fingerprint Exists' });
+                        return res.status(400).send('Fingerprint Exists');
                     }
                     if (err.errors.fingerprint.kind === "max" || err.errors.fingerprint.kind === "min") {
-                        req.flash('errors', { code: 1509, msg: 'Fingerprint Out of Range ' });
+                        return res.status(400).send('Fingerprint Out of Range ');
                     }
-                    return next();
                 } else if (err.errors.passcode) {
                     if (err.errors.passcode.kind === "unique") {
-                        req.flash('errors', { code: 1508, msg: 'Passcode Exists' });
+                        return res.status(400).send('Passcode Exists');
                     }
                     if (err.errors.passcode.kind === "max" || err.errors.passcode.kind === "min") {
-                        req.flash('errors', { code: 1509, msg: 'Passcode Out of Range ' });
+                        return res.status(400).send('Passcode Out of Range');
                     }
-                    return next();
                 } else if (err.errors.gender) {
                     if (err.errors.gender.kind === "enum") {
-                        req.flash('errors', { code: 1511, msg: "Value Must Be 'Male' or 'Female'" });
+                        return res.status(400).send("Value Must Be 'Male' or 'Female'");
                     }
-                    return next();
+                    return res.sendStatus(400)
                 } else if (err.errors["sport.0"]) {
                     if (err.errors["sport.0"].kind === "enum") {
-                        req.flash('errors', { code: 1511, msg: "Value Must Be 'Football', 'Baseball', 'Wrestling'" });
+                        return res.status(400).send("Value Must Be 'Football', 'Baseball', 'Wrestling'");
                     }
-                    return next();
                 } else {
                     return next(err);
                 }
             } else {
 
                 res.locals.athleteStack.push(updatedAthlete);
-
-                req.flash('success', { code: 1504, msg: 'Athlete Updated' });
 
                 return next();
 
@@ -294,14 +269,11 @@ exports.deleteById = (req, res, next) => {
         if (err) { return next(err); }
 
         if (!deletedAthlete) {
-
-            req.flash('errors', { code: 1602, msg: 'Athlete Not Found' });
+            return res.status(404).send("Athlete Not Found");
 
         } else {
 
             res.locals.athleteStack.push(deletedAthlete);
-
-            req.flash('success', { code: 1605, msg: 'Athlete Deleted' });
 
         }
 
@@ -329,13 +301,11 @@ exports.deleteByOrg = (req, res, next) => {
 
         if (deletedAthletes.n === 0) {
 
-            req.flash('errors', { code: 1702, msg: 'Athlete Not Found' });
+            return res.status(404).send("Athlete Not Found");
 
         } else {
 
             res.locals.athleteStack.push(deletedAthletes.n);
-
-            req.flash('success', { code: 1705, msg: 'Athlete Deleted' });
 
         }
 

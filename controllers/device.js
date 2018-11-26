@@ -29,14 +29,10 @@ exports.new = (req, res, next) => {
 
         res.locals.deviceStack.push(theDevice);
 
-        req.flash('success', { code: 5103, msg: 'Created Device' });
-
         return res.json({
 
-            msg: req.flash(),
-    
             data: res.locals.deviceStack
-    
+
         });
 
     });
@@ -61,13 +57,11 @@ exports.findByOrg = (req, res, next) => {
 
         if (!theDevices.length) {
 
-            req.flash('errors', { code: 5202, msg: 'Device Not Found' });
+            return next();
 
         } else {
 
             res.locals.deviceStack = theDevices;
-
-            req.flash('success', { code: 5201, msg: 'Device Found' });
         }
 
         return next();
@@ -92,11 +86,9 @@ exports.findById = (req, res, next) => {
 
         if (!theDevice) {
 
-            req.flash('errors', { code: 5302, msg: 'Device Not Found' });
+            return next();
 
         } else {
-
-            req.flash('success', { code: 5301, msg: 'Device Found' });
 
             res.locals.deviceStack.push(theDevice);
         }
@@ -198,8 +190,6 @@ exports.ioWeightCalc = async (req, res, next) => {
 
     res.locals.calcStack.push(calcs);
 
-    req.flash('success', { code: 5403, msg: 'Created New IN/OUT Weight' });
-
     return next();
 };
 
@@ -230,8 +220,6 @@ exports.sWeightCalc = async (req, res, next) => {
 
     res.locals.calcStack.push(calcs);
 
-    req.flash('success', { code: 5503, msg: 'Created New SAVE Weight' });
-
     return next();
 };
 
@@ -244,8 +232,6 @@ exports.resNewWeight = (req, res, next) => {
 
     return res.json({
 
-        msg: req.flash(),
-        
         data: {
             wtMsg: res.locals.calcStack[0].wtMsg,
             calcMsg: res.locals.calcStack[0].calcMsg,

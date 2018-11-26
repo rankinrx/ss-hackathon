@@ -7,8 +7,6 @@ exports.getOverviewPage = (req, res, next) => {
 
     return res.json({
 
-        msg: req.flash(),
-
         data: {
             notifications: res.locals.notificationStack,
             info: {
@@ -39,17 +37,6 @@ exports.getAthletesPage = (req, res, next) => {
         return weight.athlete;
     });
 
-    // if (theWeights) {
-
-    //     theWeights.forEach(function (weight) {
-    //         let index = theAthletes.findIndex(athlete => athlete._id === weight.athlete);
-    //         if (!theAthletes[index].weight) theAthletes[index].weight = [];
-    //         theAthletes[index].weight.push(weight)
-    //     });
-    // }
-
-    // return res.json(theWeights)
-
     if (theAthletes) {
         theAthletes.forEach(function (athlete) {
             if(groupedByAthlete[athlete._id]) {
@@ -73,8 +60,6 @@ exports.getAthletesPage = (req, res, next) => {
 
     return res.json({
 
-        msg: req.flash(),
-
         data: {
 
             athletes: athleteResults
@@ -90,8 +75,6 @@ exports.getAthletesPage = (req, res, next) => {
 exports.postAthletesPage = (req, res, next) => {
 
     return res.json({
-
-        msg: req.flash(),
 
         data: res.locals.athleteStack
 
@@ -134,7 +117,6 @@ exports.getAthleteProfilePage = (req, res, next) => {
 
     return res.json({
 
-        msg: req.flash(),
         data: {
             athlete: athleteResult,
             notifications: notificationsResults,
@@ -150,8 +132,6 @@ exports.getAthleteProfilePage = (req, res, next) => {
 exports.postAthleteProfilePage = (req, res, next) => {
 
     return res.json({
-
-        msg: req.flash(),
 
         data: res.locals.athleteStack
 
@@ -198,7 +178,6 @@ exports.getWeightPage = (req, res, next) => {
 
     return res.json({
 
-        msg: req.flash(),
         data: {
             athlete: athleteResults,
             weight: weightResults
@@ -223,11 +202,8 @@ exports.getSettingsPage = (req, res, next) => {
         iiPercent: req.session.currentOrg.iiPercent
     };
 
-    req.flash('success', { msg: 'Settings Found' });
-
     return res.json({
 
-        msg: req.flash(),
 
         data: {
 
@@ -243,9 +219,21 @@ exports.getSettingsPage = (req, res, next) => {
  */
 exports.postSettingsPage = (req, res, next) => {
 
+    const settingsResult = {
+        ioMessage: req.session.currentOrg.ioMessage,
+
+        ioPercent: req.session.currentOrg.ioPercent,
+
+        iiMessage: req.session.currentOrg.iiMessage,
+
+        iiPercent: req.session.currentOrg.iiPercent
+    };
+
     return res.json({
 
-        msg: req.flash(),
+        data: {
+            settings: settingsResult
+        }
 
     });
 };
@@ -256,8 +244,6 @@ exports.postSettingsPage = (req, res, next) => {
 exports.deleteAthlete = (req, res, next) => {
 
     return res.json({
-
-        msg: req.flash(),
 
         data: {
             athletes: res.locals.athleteStack,
@@ -274,8 +260,6 @@ exports.deleteAthlete = (req, res, next) => {
 exports.deleteNotification = (req, res, next) => {
 
     return res.json({
-
-        msg: req.flash(),
 
         data: {
             notification: res.locals.notificationStack

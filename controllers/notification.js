@@ -44,8 +44,6 @@ exports.new = async (req, res, next) => {
 
             res.locals.notificationStack.push(theNotification);
 
-            req.flash('success', { code: 3503, msg: 'Created Notification' });
-
         });
 
     }
@@ -69,8 +67,6 @@ exports.findByAthleteStack = (req, res, next) => {
 
     if (!theAthletes.length) {
 
-        req.flash('errors', { code: 3102, msg: 'Notifications Not Found' });
-
         return next();
 
     }
@@ -85,16 +81,8 @@ exports.findByAthleteStack = (req, res, next) => {
 
         if (err) { return next(err); }
 
-        if (!theNotifications.length) {
 
-            req.flash('errors', { code: 3102, msg: 'Notifications Not Found' });
-
-        } else {
-
-            res.locals.notificationStack = theNotifications;
-
-            req.flash('success', { code: 3101, msg: `Notifications Found` });
-        }
+        res.locals.notificationStack = theNotifications;
 
         return next();
 
@@ -120,18 +108,15 @@ exports.deleteById = (req, res, next) => {
 
         if (!deletedNotification) {
 
-            req.flash('errors', { code: 3202, msg: 'Notification Not Found' });
+            return res.status(404).send('Notification Not Found');
 
         } else {
 
             res.locals.notificationStack.push(deletedNotification);
-
-            req.flash('success', { code: 3205, msg: `Deleted Notification` });
+            
         }
 
         return next();
-
-
 
     });
 
@@ -153,17 +138,7 @@ exports.deleteByAthleteId = (req, res, next) => {
 
         if (err) { return next(err); }
 
-        if (deletedNotifications.n === 0) {
-
-            req.flash('errors', { code: 2402, msg: 'Notifications Not Found' });
-
-        } else {
-
-            res.locals.notificationStack.push(deletedNotifications.n);
-
-            req.flash('success', { code: 2405, msg: 'Notifications Deleted' });
-
-        }
+        res.locals.notificationStack.push(deletedNotifications.n);
 
         return next();
 
@@ -187,8 +162,6 @@ exports.deleteByAthleteStack = (req, res, next) => {
 
     if (!theAthletes.length) {
 
-        req.flash('errors', { code: 3302, msg: 'Notifications Not Found' });
-
         return next();
 
     }
@@ -203,17 +176,7 @@ exports.deleteByAthleteStack = (req, res, next) => {
 
         if (err) { return next(err); }
 
-        if (deletedNotifications.n === 0) {
-
-            req.flash('errors', { code: 3302, msg: 'Notifications Not Found' });
-
-        } else {
-
-            res.locals.notificationStack.push(deletedNotifications.n);
-
-            req.flash('success', { code: 3305, msg: 'Notifications Deleted' });
-
-        }
+        res.locals.notificationStack.push(deletedNotifications.n);
 
         return next();
 

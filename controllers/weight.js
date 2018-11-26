@@ -31,8 +31,6 @@ exports.new = (req, res, next) => {
 
         res.locals.weightStack.push(theWeight);
 
-        req.flash('success', { code: 2103, msg: `Created Weight` });
-
         return next();
 
     });
@@ -55,8 +53,6 @@ exports.findByIo = (req, res, next) => {
         if (err) { return next(err); }
 
         res.locals.weightStack = theWeights;
-
-        req.flash('success', { code: 2201, msg: `Weights Found` });
 
         return next();
 
@@ -81,8 +77,6 @@ exports.findByAthleteStack = (req, res, next) => {
 
     if (!theAthletes.length) {
 
-        req.flash('errors', { code: 2302, msg: 'Weight Not Found' });
-
         return next();
 
     }
@@ -96,17 +90,7 @@ exports.findByAthleteStack = (req, res, next) => {
 
         if (err) { return next(err); }
 
-        if (!theWeights.length) {
-
-            req.flash('errors', { code: 2302, msg: 'Weight Not Found' });
-
-        } else {
-
-            res.locals.weightStack = theWeights;
-
-            req.flash('success', { code: 2301, msg: `Weight Found` });
-
-        }
+        res.locals.weightStack = theWeights;
 
         return next();
 
@@ -130,17 +114,7 @@ exports.deleteByAthleteId = (req, res, next) => {
 
         if (err) { return next(err); }
 
-        if (deletedWeight.n === 0) {
-
-            req.flash('errors', { code: 2402, msg: 'Weight Not Found' });
-
-        } else {
-
-            res.locals.weightStack.push(deletedWeight.n);
-
-            req.flash('success', { code: 2405, msg: 'Weight Deleted' });
-
-        }
+        res.locals.weightStack.push(deletedWeight.n);
 
         return next();
 
@@ -164,8 +138,6 @@ exports.deleteByAthleteStack = (req, res, next) => {
 
     if (!theAthletes.length) {
 
-        req.flash('errors', { code: 2502, msg: 'Weights Not Found' });
-
         return next();
 
     }
@@ -180,17 +152,7 @@ exports.deleteByAthleteStack = (req, res, next) => {
 
         if (err) { return next(err); }
 
-        if (deletedWeights.n === 0) {
-
-            req.flash('errors', { code: 2502, msg: 'Weight Not Found' });
-
-        } else {
-
-            res.locals.weightStack.push(deletedWeights.n);
-
-            req.flash('success', { code: 2505, msg: 'Weight Deleted' });
-
-        }
+        res.locals.weightStack.push(deletedWeights.n);
 
         return next();
 
